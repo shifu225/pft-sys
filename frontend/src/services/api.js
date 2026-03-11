@@ -1,0 +1,64 @@
+const BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : "https://naf-pft-sys.onrender.com/api";
+
+export async function computeFitness(payload) {
+  try {
+    const url = `${BASE_URL}/compute`;
+
+    console.log("Submitting to:", url); // debug – very helpful
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // Try to parse JSON even on error responses
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
+    if (!response.ok) {
+      // Handle specific backend errors
+      if (response.status === 409) {
+        throw new Error(
+          data.detail ||
+            "A record already exists for this Service Number and Year. Contact admin.",
+        );
+      }
+      if (response.status === 422) {
+        throw new Error(
+          data.detail || "Invalid input data (validation failed)",
+        );
+      }
+      if (response.status >= 500) {
+        throw new Error(
+          data.detail ||
+            "Server error – backend may be starting up (Render cold start). Try again in 30 seconds.",
+        );
+      }
+
+      throw new Error(
+        data.detail || `Submission failed (HTTP ${response.status})`,
+      );
+    }
+
+    return data;
+  } catch (err) {
+    console.error("computeFitness error:", err);
+
+    if (err.name === "TypeError" && err.message.includes("fetch")) {
+      throw new Error(
+        "Network error – cannot reach the backend server. Check your internet or try again later.",
+      );
+    }
+
+    throw err;
+  }
+}
