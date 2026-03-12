@@ -9,7 +9,7 @@ export default defineConfig({
     proxy: {
       // Proxy everything starting with /api to Render
       "/api": {
-        target: "https://naf-pft-sys.onrender.com",
+        target: "https://pft-sys.onrender.com",
         changeOrigin: true,
         secure: false, // skip SSL check in dev
         rewrite: (path) => path, // prevents any path modification/decoding
