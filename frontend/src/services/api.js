@@ -1,6 +1,6 @@
 const BASE_URL = import.meta.env.DEV
   ? "/api"
-  : "https://naf-pft-sys.onrender.com/api";
+  : "https://pft-sys.onrender.com/api";
 
 export async function computeFitness(payload) {
   try {
