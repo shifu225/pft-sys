@@ -130,7 +130,7 @@ export default function Results() {
       formData.append("email", state.email);
       formData.append("file", pdfBlob, "NAF_PFT_Report.pdf");
 
-      const res = await fetch("https://naf-pft-sys.onrender.com/send-report", {
+      const res = await fetch("https://pft-sys.onrender.com/send-report", {
         method: "POST",
         body: formData,
       });
