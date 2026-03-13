@@ -1,4 +1,4 @@
-const BASE_URL = "https://naf-pft-sys.onrender.com/api";
+const BASE_URL = "https://pft-sys.onrender.com/api";
 
 export async function getAllPersonnel() {
   const res = await fetch(`${BASE_URL}/pft-results`);
