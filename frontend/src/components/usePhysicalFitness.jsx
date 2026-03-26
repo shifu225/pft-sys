@@ -318,7 +318,7 @@ export function usePhysicalFitness() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const ranks = [
-    "Air CraftMan",
+    "Air Craftman",
     "Air Craftwoman",
     "Lance Corporal",
     "Corporal",

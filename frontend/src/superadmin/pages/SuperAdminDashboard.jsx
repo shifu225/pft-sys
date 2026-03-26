@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/superadmin.css";
 
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate();

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AnalyticsChart from "../../components/AnalyticsCharts.jsx";
 import "../styles/superadmin.css";
 
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function SuperAdminAnalytics() {
   const [data, setData] = useState([]);

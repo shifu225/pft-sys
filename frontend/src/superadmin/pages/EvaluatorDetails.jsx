@@ -13,7 +13,7 @@ import OverallRecommendation from "../../components/results/OverallRecommendatio
 
 import "../../superadmin/styles/superadmin.css";
 
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function PersonnelDetails({ fromSuperAdmin = false }) {
   const { id } = useParams();

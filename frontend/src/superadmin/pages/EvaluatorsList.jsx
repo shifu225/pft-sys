@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/superadmin.css";
 
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function EvaluatorsList() {
   const [evaluators, setEvaluators] = useState([]);

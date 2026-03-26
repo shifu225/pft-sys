@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import airForce from "../assets/airforce.png";
 import "../styles/PhysicalFitness.css";
 
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function PhysicalFitness() {
   const { formData, handleChange, handleSubmit, ranks } = usePhysicalFitness();
