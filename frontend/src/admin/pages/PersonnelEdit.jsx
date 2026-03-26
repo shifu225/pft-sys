@@ -1,47 +1,95 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { getPersonnelById } from "../services/adminApi";
-import airForce from "../../assets/airforce.png";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../styles/PersonnelEdit.css";
 
-// Define ranks (move to a separate constants file later if you prefer)
+// Define ranks
 const RANKS = [
-  "Air Commodore",
-  "Group Captain",
-  "Wing Commander",
-  "Squadron Leader",
-  "Flight Lieutenant",
-  "Flying Officer",
-  "Pilot Officer",
-  "Master Warrant Officer",
-  "Warrant Officer",
-  "Flight Sergeant",
-  "Sergeant",
-  "Corporal",
+  "Air Craftman",
+  "Air Craftwoman",
   "Lance Corporal",
-  "Aircraftman",
-  // Add more ranks as needed
+  "Corporal",
+  "Sergeant",
+  "Flight Sergeant",
+  "Warrant Officer",
+  "Master Warrant Officer",
+  "Air Warrant Officer",
+  "Flight Lieutenant",
+  "Squadron Leader",
+  "Wing Commander",
+  "Group Captain",
+  "Air Commodore",
+  "Air Vice Marshal",
+  "Vice Marshal",
+  "Air Chief Marshal",
+  "Marshal of the Air Force",
 ];
 
-export default function PersonnelEdit() {
+const API_BASE = "https://naf-pft-sys-1.onrender.com";
+
+export default function PersonnelEdit({ fromSuperAdmin = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [formData, setFormData] = useState({});
+  const isSuperAdmin =
+    fromSuperAdmin || location.pathname.includes("/superadmin/");
+
+  const [formData, setFormData] = useState({
+    year: "",
+    full_name: "",
+    rank: "",
+    svc_no: "",
+    unit: "",
+    email: "",
+    date: "",
+    appointment: "",
+    height: "",
+    weight_current: "",
+    age: "",
+    sex: "",
+    cardio_cage: "",
+    step_up_value: "",
+    push_up_value: "",
+    sit_up_value: "",
+    chin_up_value: "",
+    sit_reach_value: "",
+    evaluator_name: "",
+    evaluator_rank: "",
+    notes: "",
+  });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch existing record when component mounts
+  // Fetch record
   useEffect(() => {
     async function fetchRecord() {
       try {
         setLoading(true);
-        const response = await fetch(`https://naf-pft-sys.onrender.com/api/pft-results/${id}`);
+
+        const endpoint = isSuperAdmin
+          ? `${API_BASE}/superadmin/pft-results/${id}`
+          : `${API_BASE}/api/pft-results/${id}`;
+
+        const response = await fetch(endpoint, {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
         if (!response.ok) {
           throw new Error(`Failed to fetch record: ${response.status}`);
         }
+
         const data = await response.json();
+
+        // Fix date format for input[type="date"]
+        if (data.date) {
+          data.date = data.date.split("T")[0];
+        }
+
         setFormData(data);
       } catch (err) {
         setError(err.message || "Could not load record");
@@ -51,7 +99,7 @@ export default function PersonnelEdit() {
     }
 
     fetchRecord();
-  }, [id]);
+  }, [id, isSuperAdmin]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -64,25 +112,105 @@ export default function PersonnelEdit() {
     setError(null);
 
     try {
-      const response = await fetch(`https://naf-pft-sys.onrender.com/api/pft-results/${id}`, {
+      // Prepare update data - only send changed fields with proper types
+      const updateData = {};
+
+      const fieldsToUpdate = [
+        "year",
+        "full_name",
+        "rank",
+        "svc_no",
+        "email",
+        "unit",
+        "date",
+        "appointment",
+        "height",
+        "weight_current",
+        "age",
+        "sex",
+        "cardio_cage",
+        "step_up_value",
+        "push_up_value",
+        "sit_up_value",
+        "chin_up_value",
+        "sit_reach_value",
+        "notes",
+      ];
+
+      fieldsToUpdate.forEach((field) => {
+        const value = formData[field];
+        if (value !== undefined && value !== null && value !== "") {
+          // Convert numeric fields
+          if (
+            [
+              "year",
+              "age",
+              "cardio_cage",
+              "step_up_value",
+              "push_up_value",
+              "sit_up_value",
+              "chin_up_value",
+            ].includes(field)
+          ) {
+            updateData[field] = parseInt(value) || 0;
+          } else if (
+            ["height", "weight_current", "sit_reach_value"].includes(field)
+          ) {
+            updateData[field] = parseFloat(value) || 0;
+          } else {
+            updateData[field] = value;
+          }
+        }
+      });
+
+      console.log("[EDIT] Sending update:", updateData);
+
+      const endpoint = isSuperAdmin
+        ? `${API_BASE}/superadmin/pft-results/${id}`
+        : `${API_BASE}/api/pft-results/${id}`;
+
+      const response = await fetch(endpoint, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.detail || "Failed to update record");
+        throw new Error(
+          errData.detail || `Failed to update: ${response.status}`,
+        );
       }
 
-      alert("Record updated successfully!");
-      navigate(`/admin/personnel/${id}`);
+      // Get the updated record with recomputed values
+      const updatedRecord = await response.json();
+
+      console.log("[EDIT] Received updated record:", updatedRecord);
+
+      alert("Record updated successfully! All scores have been recomputed.");
+
+      // Navigate to view the updated record with the new data
+      if (isSuperAdmin) {
+        navigate(`/superadmin/pft-results/${id}`, { state: updatedRecord });
+      } else {
+        navigate(`/admin/personnel/${id}`, { state: updatedRecord });
+      }
     } catch (err) {
+      console.error("[EDIT ERROR]", err);
       setError(err.message || "Update failed. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (isSuperAdmin) {
+      navigate(`/superadmin/pft-results/${id}`);
+    } else {
+      navigate(`/admin/personnel/${id}`);
     }
   };
 
@@ -110,16 +238,19 @@ export default function PersonnelEdit() {
         <p>
           Service No: {formData.svc_no || "—"} • ID: {id}
         </p>
+        <p style={{ color: "#666", fontSize: "0.9rem", marginTop: "8px" }}>
+          Note: Changing physical test values will automatically recompute all
+          scores, grades, and prescriptions.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="edit-form-grid">
-        {/* Personal & Identification */}
         <div>
           <label>Year:</label>
           <input
             name="year"
             type="number"
-            value={formData.year || ""}
+            value={formData.year}
             onChange={handleChange}
             required
           />
@@ -130,7 +261,7 @@ export default function PersonnelEdit() {
           <input
             name="full_name"
             type="text"
-            value={formData.full_name || ""}
+            value={formData.full_name}
             onChange={handleChange}
             required
           />
@@ -140,7 +271,7 @@ export default function PersonnelEdit() {
           <label>Rank:</label>
           <select
             name="rank"
-            value={formData.rank || ""}
+            value={formData.rank}
             onChange={handleChange}
             required
           >
@@ -158,7 +289,18 @@ export default function PersonnelEdit() {
           <input
             name="svc_no"
             type="text"
-            value={formData.svc_no || ""}
+            value={formData.svc_no}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div>
+          <label>Email:</label>
+          <input
+            name="email"
+            type="text"
+            value={formData.email}
             onChange={handleChange}
             required
           />
@@ -169,7 +311,7 @@ export default function PersonnelEdit() {
           <input
             name="unit"
             type="text"
-            value={formData.unit || ""}
+            value={formData.unit}
             onChange={handleChange}
             required
           />
@@ -180,7 +322,7 @@ export default function PersonnelEdit() {
           <input
             name="date"
             type="date"
-            value={formData.date || ""}
+            value={formData.date}
             onChange={handleChange}
             required
           />
@@ -191,20 +333,19 @@ export default function PersonnelEdit() {
           <input
             name="appointment"
             type="text"
-            value={formData.appointment || ""}
+            value={formData.appointment}
             onChange={handleChange}
             required
           />
         </div>
 
-        {/* Physical & Test Data */}
         <div>
           <label>Height (m):</label>
           <input
             name="height"
             type="number"
             step="0.01"
-            value={formData.height || ""}
+            value={formData.height}
             onChange={handleChange}
             required
           />
@@ -216,7 +357,7 @@ export default function PersonnelEdit() {
             name="weight_current"
             type="number"
             step="0.1"
-            value={formData.weight_current || ""}
+            value={formData.weight_current}
             onChange={handleChange}
             required
           />
@@ -227,7 +368,7 @@ export default function PersonnelEdit() {
           <input
             name="age"
             type="number"
-            value={formData.age || ""}
+            value={formData.age}
             onChange={handleChange}
             required
           />
@@ -237,7 +378,7 @@ export default function PersonnelEdit() {
           <label>Sex:</label>
           <select
             name="sex"
-            value={formData.sex || ""}
+            value={formData.sex}
             onChange={handleChange}
             required
           >
@@ -251,7 +392,7 @@ export default function PersonnelEdit() {
           <label>Cardio Cage:</label>
           <select
             name="cardio_cage"
-            value={formData.cardio_cage || ""}
+            value={formData.cardio_cage}
             onChange={handleChange}
             required
           >
@@ -267,7 +408,7 @@ export default function PersonnelEdit() {
           <input
             name="step_up_value"
             type="number"
-            value={formData.step_up_value || ""}
+            value={formData.step_up_value}
             onChange={handleChange}
             required
           />
@@ -278,7 +419,7 @@ export default function PersonnelEdit() {
           <input
             name="push_up_value"
             type="number"
-            value={formData.push_up_value || ""}
+            value={formData.push_up_value}
             onChange={handleChange}
             required
           />
@@ -289,7 +430,7 @@ export default function PersonnelEdit() {
           <input
             name="sit_up_value"
             type="number"
-            value={formData.sit_up_value || ""}
+            value={formData.sit_up_value}
             onChange={handleChange}
             required
           />
@@ -300,7 +441,7 @@ export default function PersonnelEdit() {
           <input
             name="chin_up_value"
             type="number"
-            value={formData.chin_up_value || ""}
+            value={formData.chin_up_value}
             onChange={handleChange}
             required
           />
@@ -311,7 +452,7 @@ export default function PersonnelEdit() {
           <input
             name="sit_reach_value"
             type="number"
-            value={formData.sit_reach_value || ""}
+            value={formData.sit_reach_value}
             onChange={handleChange}
             required
           />
@@ -322,30 +463,23 @@ export default function PersonnelEdit() {
           <input
             name="evaluator_name"
             type="text"
-            value={formData.evaluator_name || ""}
-            onChange={handleChange}
-            required
+            value={formData.evaluator_name}
+            disabled
+            style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
           />
         </div>
 
         <div>
           <label>Evaluator Rank:</label>
-          <select
+          <input
             name="evaluator_rank"
-            value={formData.evaluator_rank || ""}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select Rank</option>
-            {RANKS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+            type="text"
+            value={formData.evaluator_rank}
+            disabled
+            style={{ backgroundColor: "#f0f0f0", cursor: "not-allowed" }}
+          />
         </div>
 
-        {/* Notes – full width */}
         <div className="full-width">
           <label>Notes / Remarks:</label>
           <textarea
@@ -353,20 +487,18 @@ export default function PersonnelEdit() {
             value={formData.notes || ""}
             onChange={handleChange}
             rows={4}
-            placeholder="Any additional comments, observations, or corrections..."
           />
         </div>
 
-        {/* Action Buttons */}
         <div className="form-actions">
           <button type="submit" className="submit-btn" disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Saving & Recomputing..." : "Save Changes"}
           </button>
 
           <button
             type="button"
             className="cancel-btn"
-            onClick={() => navigate(-1)}
+            onClick={handleCancel}
             disabled={saving}
           >
             Cancel

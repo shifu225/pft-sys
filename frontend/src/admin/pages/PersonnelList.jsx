@@ -1,21 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAdminData } from "../hooks/useAdminData";
 
 import AdminHeader from "../components/AdminHeader";
 import AdminSidebar from "../components/AdminSidebar";
 import PersonnelTable from "../components/PersonnelTable";
 import SearchBar from "../components/SearchBar";
-import Pagination from "../components/Pagination"; // ← assuming you have this
+import Pagination from "../components/Pagination";
 
 import "../styles/Admin.css";
 
 export default function PersonnelList() {
   const { personnel, loading, removePersonnel, search } = useAdminData();
-  
-  // Add local page state (you'll need to modify useAdminData hook too)
+
   const [page, setPage] = useState(1);
-  
-  // You can slice data locally for now (simple pagination)
+
+  // Reset to page 1 when personnel data changes (after search)
+  useEffect(() => {
+    setPage(1);
+  }, [personnel.length]);
+
   const itemsPerPage = 10;
   const startIndex = (page - 1) * itemsPerPage;
   const paginatedData = personnel.slice(startIndex, startIndex + itemsPerPage);
@@ -35,20 +38,19 @@ export default function PersonnelList() {
               <span>Loading records...</span>
             ) : (
               <span>
-                {personnel.length === 0 
-                  ? "No records found" 
-                  : `${personnel.length} record${personnel.length !== 1 ? 's' : ''}`}
+                {personnel.length === 0
+                  ? "No records found"
+                  : `${personnel.length} record${personnel.length !== 1 ? "s" : ""}`}
               </span>
             )}
           </div>
         </div>
 
+        {/* Safe manual search - no twitching risk */}
         <SearchBar onSearch={search} />
 
         {loading ? (
           <div className="loading-skeleton">
-            <p>Loading personnel data...</p>
-            {/* Optional: show 5 fake rows as skeleton */}
             <div className="skeleton-row" />
             <div className="skeleton-row" />
             <div className="skeleton-row" />
@@ -56,20 +58,16 @@ export default function PersonnelList() {
         ) : personnel.length === 0 ? (
           <div className="empty-state">
             <p>No personnel records found.</p>
-            {search ? <p>Try a different service number or clear the search.</p> : null}
           </div>
         ) : (
           <>
-            <PersonnelTable 
-              data={paginatedData} 
-              onDelete={removePersonnel} 
-            />
+            <PersonnelTable data={paginatedData} onDelete={removePersonnel} />
 
             {totalPages > 1 && (
-              <Pagination 
-                page={page} 
-                setPage={setPage} 
-                totalPages={totalPages} // optional prop if you want to show 1/5 etc.
+              <Pagination
+                page={page}
+                setPage={setPage}
+                totalPages={totalPages}
               />
             )}
           </>

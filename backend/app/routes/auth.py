@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 
 from app.schemas import UserLogin, Token, UserOut, UserRegister
@@ -6,7 +6,9 @@ from app.services.auth import (
     create_access_token,
     get_current_user,
     verify_password,
-    get_password_hash
+    get_password_hash,
+    set_session_cookie,  # Changed from create_session to set_session_cookie
+    clear_session_cookie
 )
 from app.services.database import get_db
 from app.services.models import User
@@ -21,7 +23,6 @@ def register_user(
     data: UserRegister,
     db: Session = Depends(get_db)
 ):
-
     svc_no = data.svc_no.strip().upper()
 
     existing_user = db.query(User).filter(User.svc_no == svc_no).first()
@@ -54,13 +55,14 @@ def register_user(
 
 
 # ── LOGIN ───────────────────────────────────────────
+# CRITICAL: response_model=Token ensures all fields are validated
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(
+    response: Response,
     data: UserLogin,
     db: Session = Depends(get_db)
 ):
-
     svc_no = data.svc_no.strip().upper()
 
     user = db.query(User).filter(User.svc_no == svc_no).first()
@@ -91,13 +93,25 @@ def login_for_access_token(
 
     access_token = create_access_token(data={"sub": user.svc_no})
 
+    # Set HTTP-only cookie
+    set_session_cookie(response, access_token)
+
+    # CRITICAL: Must return ALL fields that Token schema expects
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "role": user.role,
-        "full_name": user.full_name,
-        "rank": user.rank
+        "role": user.role,           # ✅ Required by Token schema
+        "full_name": user.full_name,  # ✅ Required by Token schema
+        "rank": user.rank             # ✅ Required by Token schema
     }
+
+
+# ── LOGOUT ───────────────────────────────────────────
+
+@router.post("/logout")
+def logout(response: Response):
+    clear_session_cookie(response)
+    return {"message": "Logged out successfully"}
 
 
 # ── CURRENT USER ────────────────────────────────────
@@ -106,7 +120,6 @@ def login_for_access_token(
 def read_users_me(
     current_user: User = Depends(get_current_user)
 ):
-
     return {
         "svc_no": current_user.svc_no,
         "full_name": current_user.full_name,
@@ -114,3 +127,5 @@ def read_users_me(
         "role": current_user.role,
         "email": current_user.email
     }
+
+
