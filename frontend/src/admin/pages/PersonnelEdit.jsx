@@ -24,7 +24,7 @@ const RANKS = [
   "Marshal of the Air Force",
 ];
 
-const API_BASE = "https://naf-pft.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function PersonnelEdit({ fromSuperAdmin = false }) {
   const { id } = useParams();

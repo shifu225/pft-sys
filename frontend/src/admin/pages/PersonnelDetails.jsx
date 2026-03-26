@@ -11,7 +11,7 @@ import OverallRecommendation from "../../components/results/OverallRecommendatio
 import "../../styles/Results.css";
 import "../styles/Admin.css";
 
-const API_BASE = "https://naf-pft.onrender.com";
+const API_BASE = "https://pft-sys.onrender.com";
 
 export default function PersonnelDetails({ fromSuperAdmin = false }) {
   const { id } = useParams();
